@@ -1,7 +1,5 @@
-// src/hooks/useApi.js
 import { useState, useEffect } from 'react';
 
-// بيانات الطلاب الثابتة
 const fakeStudents = [
   { id: 1, name: 'Alice', age: 20, grade: 'A' },
   { id: 2, name: 'Bob', age: 22, grade: 'B' },
@@ -16,7 +14,6 @@ export function useApi(url, method = 'GET', body = null, autoFetch = true) {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // ✅ بدل الفتش الحقيقي، استخدم البيانات الثابتة
       if (method === 'GET') {
         setData(fakeStudents);
       } else if (method === 'POST') {
