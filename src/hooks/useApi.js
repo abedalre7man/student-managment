@@ -1,6 +1,13 @@
 // src/hooks/useApi.js
 import { useState, useEffect } from 'react';
 
+// بيانات الطلاب الثابتة
+const fakeStudents = [
+  { id: 1, name: 'Alice', age: 20, grade: 'A' },
+  { id: 2, name: 'Bob', age: 22, grade: 'B' },
+  { id: 3, name: 'Abed', age: 45, grade: 'A' }
+];
+
 export function useApi(url, method = 'GET', body = null, autoFetch = true) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(autoFetch);
@@ -9,18 +16,20 @@ export function useApi(url, method = 'GET', body = null, autoFetch = true) {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: body ? JSON.stringify(body) : null,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+      // ✅ بدل الفتش الحقيقي، استخدم البيانات الثابتة
+      if (method === 'GET') {
+        setData(fakeStudents);
+      } else if (method === 'POST') {
+        setData(prev => [...prev, body]);
+      } else if (method === 'PUT') {
+        const updated = fakeStudents.map((item) =>
+          item.id === body.id ? body : item
+        );
+        setData(updated);
+      } else if (method === 'DELETE') {
+        const filtered = fakeStudents.filter((item) => item.id !== body.id);
+        setData(filtered);
       }
-
-      const result = await response.json();
-      setData(result);
     } catch (err) {
       setError(err);
     } finally {
@@ -32,7 +41,7 @@ export function useApi(url, method = 'GET', body = null, autoFetch = true) {
     if (autoFetch) {
       fetchData();
     }
-  }, [url, method, body, autoFetch]);
+  }, [autoFetch]);
 
   return { data, loading, error, refetch: fetchData };
 }
