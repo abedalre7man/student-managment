@@ -1,119 +1,67 @@
 // src/pages/EditStudent.jsx
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import { StudentContext } from '../context/StudentContext';
 
 export default function EditStudent() {
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [grade, setGrade] = useState('');
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { students, updateStudent } = useContext(StudentContext);
 
-  const allowedGrades = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D', 'F'];
+  const [student, setStudent] = useState(null);
+  const [error, setError] = useState('');
 
-  // جلب بيانات الطالب
   useEffect(() => {
-    fetch(`http://localhost:5000/students/${id}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('تعذر جلب بيانات الطالب');
-        return res.json();
-      })
-      .then((data) => {
-        setName(data.name);
-        setAge(data.age);
-        setGrade(data.grade);
-      })
-      .catch((err) => {
-        setError(`خطأ أثناء التحميل: ${err.message}`);
-        console.error(err);
-      });
-  }, [id]);
+    const target = students.find((s) => s.id === Number(id));
+    if (!target) {
+      navigate('/');
+    } else {
+      setStudent({ ...target });
+    }
+  }, [id, students, navigate]);
 
-  // عند الضغط على زر "تعديل"
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (student.name.trim().length < 3) return setError('Name too short.');
+    const numericAge = Number(student.age);
+    if (isNaN(numericAge) || numericAge < 5 || numericAge > 100) return setError('Invalid age.');
+    const allowedGrades = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D', 'F'];
+    if (!allowedGrades.includes(student.grade)) return setError('Invalid grade.');
 
-    // تحقق من البيانات
-    if (name.trim().length < 3) {
-      setError('الاسم يجب أن يكون على الأقل 3 أحرف.');
-      return;
-    }
-
-    const numericAge = Number(age);
-    if (isNaN(numericAge) || numericAge < 5 || numericAge > 100) {
-      setError('العمر يجب أن يكون رقمًا بين 5 و 100.');
-      return;
-    }
-
-    if (!allowedGrades.includes(grade)) {
-      setError('العلامة غير صالحة. استخدم A+, A, B+, ... F');
-      return;
-    }
-
-    const updatedStudent = { name, age: numericAge, grade };
-
-    fetch(`http://localhost:5000/students/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedStudent),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('فشل في التحديث');
-        return res.json();
-      })
-      .then(() => {
-        navigate('/');
-      })
-      .catch((err) => {
-        setError('حدث خطأ أثناء التعديل.');
-        console.error(err);
-      });
+    updateStudent(student); // التعديل عن طريق StudentContext
+    navigate('/');
   };
+
+  if (!student) return <p style={{ color: 'white' }}>Loading...</p>;
 
   return (
     <div style={{ padding: '2rem', color: 'white' }}>
-      <h2>تعديل بيانات الطالب</h2>
-
+      <h2>تعديل طالب</h2>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
       <form onSubmit={handleSubmit} style={{ maxWidth: '400px', margin: 'auto' }}>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-
-        <div style={{ marginBottom: '1rem' }}>
-          <label>Name:</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={{ width: '100%', padding: '0.5rem' }}
-            required
-          />
+        <label>Name:</label>
+        <input
+          value={student.name}
+          onChange={(e) => setStudent({ ...student, name: e.target.value })}
+          required
+        />
+        <label>Age:</label>
+        <input
+          value={student.age}
+          onChange={(e) => setStudent({ ...student, age: e.target.value })}
+          type="number"
+          required
+        />
+        <label>Grade:</label>
+        <input
+          value={student.grade}
+          onChange={(e) => setStudent({ ...student, grade: e.target.value.toUpperCase() })}
+          required
+        />
+        <div style={{ marginTop: '1rem' }}>
+          <button type="submit" style={{ marginRight: '10px' }}>Update</button>
+          <Link to="/"><button type="button">Cancel</button></Link>
         </div>
-
-        <div style={{ marginBottom: '1rem' }}>
-          <label>age:</label>
-          <input
-            type="number"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            style={{ width: '100%', padding: '0.5rem' }}
-            required
-          />
-        </div>
-
-        <div style={{ marginBottom: '1rem' }}>
-          <label>grade:</label>
-          <input
-            type="text"
-            value={grade}
-            onChange={(e) => setGrade(e.target.value.toUpperCase())}
-            placeholder="مثلاً: A+, B, F"
-            style={{ width: '100%', padding: '0.5rem' }}
-            required
-          />
-        </div>
-
-        <button type="submit">edit</button>{' '}
-        <Link to="/"><button type="button">cancel</button></Link>
       </form>
     </div>
   );
